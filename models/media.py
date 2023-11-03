@@ -1,9 +1,48 @@
+from urllib.parse import urlparse
+import os
+import mimetypes
+def get_filename_from_url(url):
+    parsed_url = urlparse(url)
+    return os.path.basename(parsed_url.path)
 class Media:
-    def __init__(self, post_id, media_url, media_type, caption=None):
-        self.post_id = post_id
-        self.media_url = media_url
-        self.media_type = media_type
-        self.caption = caption
+    def __init__(self, parent_id, post_id, media_url, media_type, caption=None):
+        self.post_id: str = post_id
+        self.media_url: str = media_url
+        self.media_type: str = media_type
+        self.caption: str | None = caption
+        self.parent_id: str = parent_id
+
+    def to_dict(self):
+        return {
+            'post_id': self.post_id,
+            'media_url': self.media_url,
+            'media_type': self.media_type,
+            'caption': self.caption,
+            'parent_id': self.parent_id,
+            'filename': self.infer_filename(),
+            'mime_type': self.infer_mime_type(),
+            'extension': self.infer_extension()
+
+        }
+    
+    def infer_filename(self):
+        try:
+            return get_filename_from_url(self.media_url)
+        except:
+            return None
+        
+    def infer_mime_type(self):
+        try:
+            return mimetypes.guess_type(self.infer_filename())[0]
+        except:
+            return None
+        
+    def infer_extension(self):
+        try:
+            return mimetypes.guess_extension(self.infer_mime_type())
+        except:
+            return None
+            
 
     @classmethod
     def infer_media_details(cls, data:dict[str, any]):
@@ -40,14 +79,11 @@ class Media:
         return url.replace('&amp;', '&')
         
     @classmethod
-    def from_json(cls, data:dict[str, any]) -> list:
+    def from_json(cls, data:dict[str, any], parent_id) -> list:
 
         media_details = cls.infer_media_details(data)
         media = []
         for media_type, media_url, caption in media_details:
-            media.append(cls(data['id'], media_url, media_type, caption))
+            media.append(cls(parent_id,data['id'], media_url, media_type, caption))
 
-        if not media:
-            return None
-                
         return media

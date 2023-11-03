@@ -22,6 +22,9 @@ class Post:
         self.post = None
         self.medias = []
 
+    def to_dict(self):
+        return self.post
+
     async def get_json(self, client, url):
         async with client.get(url) as response:
             # print(response)
@@ -43,6 +46,8 @@ class Post:
             return
         
         post = self.return_data[0]['data']['children'][0]['data']
+        self.medias = Media.from_json(post, f't3_{self.post_id}')
+        medias_dicts = [media.to_dict() for media in self.medias]
         self.post = {
             'datetime': datetime.utcfromtimestamp(post['created']).isoformat(),
             'title': post['title'],
@@ -54,9 +59,10 @@ class Post:
             'author_id': post['author_fullname'],
             'id': post['id'],
             'num_comments': int(post['num_comments']),
-            'score': int(post['score'])
+            'score': int(post['score']),
+            'medias': medias_dicts            
         }
-        self.medias = Media.from_json(post)
+
         
 
     async def get_json_comments(self, comment:dict[str, any]):
@@ -89,7 +95,7 @@ class Post:
             
             for comment in more_data['json']['data']['things']:
                 if comment['kind'] == 't1':
-                    more_comments.append(Comment.from_morechildren_api(comment['data']))
+                    more_comments.append(Comment.from_morechildren_api(comment))
                     
                 elif comment['kind'] == 'more':
                     match_ids = re.search(r"morechildren\((.*?)\)", comment['data']['content'])
@@ -124,7 +130,7 @@ class Post:
                 more_ids.extend(child['data']['children'])
 
         if more_ids:
-            with aiohttp.ClientSession() as client:
+            async with aiohttp.ClientSession() as client:
                 more_comments = await self.get_morechildren_comments(more_ids, client)
                 comments.extend(more_comments)
         

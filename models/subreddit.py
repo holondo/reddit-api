@@ -44,6 +44,21 @@ class Subreddit:
         self.posts.extend(new_posts)
         return self.posts
 
+    async def get_n_posts(self, n: int = 25):
+        # count = 0
+        if not self.posts:
+            await self.get_subreddit()
+        
+        last_post_id = self.posts[-1].post_id
+
+        while len(self.posts) < n:
+            await self.get_next_posts()
+            if last_post_id == self.posts[-1].post_id:
+                break
+            last_post_id = self.posts[-1].post_id
+        
+        return self.posts
+
     async def get_post(self, post_id: str):
         try:
             post = Post(self.subreddit_name, post_id)
