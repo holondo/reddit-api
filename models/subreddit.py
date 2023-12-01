@@ -14,6 +14,7 @@ class Subreddit:
         self.subreddit_name = subreddit_name
         self.base_url = f"https://www.reddit.com/r/{self.subreddit_name}/"
         self.posts = []
+        self.raw_posts = []
         self.isSynced = False
         self.ordering = "new"
 
@@ -53,6 +54,7 @@ class Subreddit:
             Post(self.subreddit_name, post["data"]["id"])
             for post in data["data"]["children"]
         ]
+        self.raw_posts.extend(data["data"]["children"])
         return self.posts
 
     async def get_next_posts(self, limit: int = 25):
@@ -69,6 +71,7 @@ class Subreddit:
             for post in data["data"]["children"]
         ]
         self.posts.extend(new_posts)
+        self.raw_posts.extend(data["data"]["children"])
         return self.posts
 
     async def get_n_posts(self, n: int = 25):
